@@ -1,0 +1,11 @@
+Incident_ID,Status,Impact,Urgency,Priority,Category,No_of_Reassignments,Open_Time,Resolved_Time,Close_Time,Reopen_Time,Handle_Time_hrs,Closure_Code,No_of_Related_Interactions,Related_Interaction,No_of_Related_Incidents,No_of_Related_Changes,Related_Change
+IM0000001,Closed,2,2,2,incident,3,2013-01-05 10:15:00,2013-01-05 14:45:00,2013-01-05 15:00:00,,4.50,Resolved,1,SD0000001,0,0,
+IM0000002,Closed,4,4,4,incident,1,2013-02-11 09:40:00,2013-02-12 11:40:00,2013-02-12 12:10:00,,26.00,Other,2,SD0000002,1,0,
+IM0000003,Open,1,2,1,incident,6,2013-03-01 08:00:00,,,,10.00,,0,,0,1,C00000056
+IM0000004,Closed,4,4,4,incident,26,2012-02-05 13:32:57,2013-11-04 13:50:27,2013-11-04 13:51:17,,3871.69,Other,1,SD0000007,2,1,C00000056
+IM0000005,Closed,3,2,2,incident,0,2014-05-18 12:00:00,2014-05-18 13:30:00,2014-05-18 13:40:00,,1.50,Resolved,0,,0,0,
+IM0000006,Closed,2,3,2,incident,4,2013-07-09 16:20:00,2013-07-09 20:00:00,2013-07-09 20:05:00,,3.67,Resolved,1,SD0000031,0,0,
+IM0000007,Closed,5,5,5,incident,2,2014-09-01 06:10:00,2014-09-02 09:10:00,2014-09-02 09:30:00,,27.00,Other,1,SD0000032,0,0,
+IM0000008,Closed,1,1,1,incident,8,2012-11-10 11:11:00,2012-11-10 12:11:00,2012-11-10 12:15:00,,1.00,Resolved,0,,0,0,
+IM0000009,Closed,3,4,4,incident,5,2013-12-24 23:00:00,2013-12-25 04:00:00,2013-12-25 04:10:00,,5.00,Resolved,0,,1,0,
+IM0000010,Closed,2,1,2,incident,0,2014-01-15 10:00:00,2014-01-15 11:00:00,2014-01-15 11:05:00,,1.00,Resolved,0,,0,0,
