@@ -62,6 +62,7 @@ with st.form("single"):
             "Urgency": urgency,
             "No_of_Reassignments": reassign,
             "Handle_Time_hrs": handle,
+            "Resolution_Time_hours":handle,
             "No_of_Related_Interactions": rel_int,
             "No_of_Related_Incidents": rel_inc,
             "No_of_Related_Changes": rel_chg,
