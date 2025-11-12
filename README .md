@@ -140,7 +140,7 @@ The model predicts ticket priority based on ticket metadata:
 
 ## 📬 Contact
 📧 Email: *[nkaur4047@gmail.com]*  
-🌍 Location: Punjab, India   
+🌍 Location: Jalandhar Punjab, India   
 
 ---
 
