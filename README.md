@@ -139,7 +139,7 @@ The model predicts ticket priority based on ticket metadata:
 ---
 
 ## 📬 Contact
-📧 Email: *[Add your professional email if you’d like]*  
+📧 Email: *[nkaur4047@gmail.com]*  
 🌍 Location: Punjab, India   
 
 ---
