@@ -38,9 +38,12 @@ if (BASE / secondary_model_name).exists():
 
 # ---------- Harmonization helper (fixes missing / aliased columns) ----------
 REQUIRED = [
-    "Impact","Urgency","No_of_Reassignments","Resolution_Time_hours",
+    "Impact","Urgency","No_of_Reassignments",
+    "Handle_Time_hrs","Resolution_Time_hours",   # added Handle_Time_hrs
     "No_of_Related_Interactions","No_of_Related_Incidents","No_of_Related_Changes",
     "Status","Category","Closure_Code"
+]
+
 ]
 ALIASES = {
     "handle_time_hrs": "Resolution_Time_hours",
@@ -54,6 +57,11 @@ def harmonize(df: pd.DataFrame) -> pd.DataFrame:
     for alias, target in ALIASES.items():
         if alias in lower and target not in df.columns:
             df[target] = df[lower[alias]]
+    # Ensure both time columns exist by mirroring, if only one is present
+    if "Handle_Time_hrs" in df.columns and "Resolution_Time_hours" not in df.columns:
+        df["Resolution_Time_hours"] = df["Handle_Time_hrs"]
+    if "Resolution_Time_hours" in df.columns and "Handle_Time_hrs" not in df.columns:
+        df["Handle_Time_hrs"] = df["Resolution_Time_hours"]
 
     # Ensure required columns exist; fill neutral defaults
     for col in REQUIRED:
