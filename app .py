@@ -22,6 +22,12 @@ primary_model_name = "priority_rf_pipeline.joblib"
 try:
     priority_model = load_artifact(primary_model_name)
     st.success(f"Loaded model: {primary_model_name}")
+    # Exact training columns (if available)
+try:
+    EXPECTED = list(priority_model.feature_names_in_)
+except Exception:
+    EXPECTED = None
+
 except Exception as e:
     st.error(f"Could not load primary model '{primary_model_name}'.\n{e}")
     st.stop()
@@ -52,24 +58,33 @@ ALIASES = {
 }
 
 def harmonize(df: pd.DataFrame) -> pd.DataFrame:
-    # Add from aliases (case-insensitive)
+    # alias copy (case-insensitive)
     lower = {c.lower(): c for c in df.columns}
     for alias, target in ALIASES.items():
         if alias in lower and target not in df.columns:
             df[target] = df[lower[alias]]
-    # Ensure both time columns exist by mirroring, if only one is present
+
+    # ensure both time columns exist by mirroring (whichever is present)
     if "Handle_Time_hrs" in df.columns and "Resolution_Time_hours" not in df.columns:
         df["Resolution_Time_hours"] = df["Handle_Time_hrs"]
     if "Resolution_Time_hours" in df.columns and "Handle_Time_hrs" not in df.columns:
         df["Handle_Time_hrs"] = df["Resolution_Time_hours"]
 
-    # Ensure required columns exist; fill neutral defaults
+    # fill any REQUIRED that are missing
     for col in REQUIRED:
         if col not in df.columns:
             df[col] = 0 if col not in ("Status","Category","Closure_Code") else "Unknown"
 
-    # Keep only known inputs (avoid extra unexpected cols)
-    return df[REQUIRED]
+    # Final ordering: if model exposes exact columns, use them; else keep as-is
+    if EXPECTED:
+        # add any still-missing expected cols as neutral defaults
+        for col in EXPECTED:
+            if col not in df.columns:
+                df[col] = 0
+        return df.reindex(columns=EXPECTED)
+    else:
+        return df
+
 
 # ---------------------------------------------------------------------------
 
@@ -109,7 +124,14 @@ with st.form("single"):
 
         try:
             row = harmonize(row)
-            pred = priority_model.predict(row)[0]
+# hard safety: guarantee both time cols exist
+if "Handle_Time_hrs" not in row.columns:
+    row["Handle_Time_hrs"] = row["Resolution_Time_hours"] if "Resolution_Time_hours" in row.columns else 0.0
+if "Resolution_Time_hours" not in row.columns:
+    row["Resolution_Time_hours"] = row["Handle_Time_hrs"] if "Handle_Time_hrs" in row.columns else 0.0
+
+pred = priority_model.predict(row)[0]
+
 
             # ---- UPGRADE #1: Pretty result badge (+ optional confidence) ----
             conf = None
@@ -156,8 +178,15 @@ if file is not None:
         dfu = pd.read_csv(file)
         st.write("Preview:", dfu.head())
         dfu = harmonize(dfu)
+if "Handle_Time_hrs" not in dfu.columns:
+    dfu["Handle_Time_hrs"] = dfu["Resolution_Time_hours"] if "Resolution_Time_hours" in dfu.columns else 0.0
+if "Resolution_Time_hours" not in dfu.columns:
+    dfu["Resolution_Time_hours"] = dfu["Handle_Time_hrs"] if "Handle_Time_hrs" in dfu.columns else 0.0
 
-        preds = priority_model.predict(dfu)
+preds = priority_model.predict(dfu)
+
+
+        
         out = dfu.copy()
         out["Predicted_Priority"] = preds
 
