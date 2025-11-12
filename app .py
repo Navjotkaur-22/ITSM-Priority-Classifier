@@ -17,22 +17,20 @@ def load_artifact(name: str):
         raise FileNotFoundError(f"Required artifact not found: {name}. Make sure the notebook saved it to the project root.")
     return joblib.load(path)
 
-# Attempt to load primary classifier (required)
+# ------------------ Load model(s) ------------------
 primary_model_name = "priority_rf_pipeline.joblib"
 try:
     priority_model = load_artifact(primary_model_name)
     st.success(f"Loaded model: {primary_model_name}")
     # Exact training columns (if available)
-try:
-    EXPECTED = list(priority_model.feature_names_in_)
-except Exception:
-    EXPECTED = None
-
+    try:
+        EXPECTED = list(priority_model.feature_names_in_)
+    except Exception:
+        EXPECTED = None
 except Exception as e:
     st.error(f"Could not load primary model '{primary_model_name}'.\n{e}")
     st.stop()
 
-# Optional secondary model (if present in your notebook)
 secondary_model = None
 secondary_model_name = "rfc_failure_pipeline.joblib"
 if (BASE / secondary_model_name).exists():
@@ -45,12 +43,11 @@ if (BASE / secondary_model_name).exists():
 # ---------- Harmonization helper (fixes missing / aliased columns) ----------
 REQUIRED = [
     "Impact","Urgency","No_of_Reassignments",
-    "Handle_Time_hrs","Resolution_Time_hours",   # added Handle_Time_hrs
+    "Handle_Time_hrs","Resolution_Time_hours",
     "No_of_Related_Interactions","No_of_Related_Incidents","No_of_Related_Changes",
     "Status","Category","Closure_Code"
 ]
 
-]
 ALIASES = {
     "handle_time_hrs": "Resolution_Time_hours",
     "resolution_time_hour": "Resolution_Time_hours",
@@ -75,16 +72,15 @@ def harmonize(df: pd.DataFrame) -> pd.DataFrame:
         if col not in df.columns:
             df[col] = 0 if col not in ("Status","Category","Closure_Code") else "Unknown"
 
-    # Final ordering: if model exposes exact columns, use them; else keep as-is
+    # If model exposes exact training columns, align and order exactly
     if EXPECTED:
-        # add any still-missing expected cols as neutral defaults
         for col in EXPECTED:
             if col not in df.columns:
                 df[col] = 0
         return df.reindex(columns=EXPECTED)
     else:
-        return df
-
+        # Otherwise prune to REQUIRED only (stable order)
+        return df[REQUIRED]
 
 # ---------------------------------------------------------------------------
 
@@ -112,8 +108,8 @@ with st.form("single"):
             "Impact": impact,
             "Urgency": urgency,
             "No_of_Reassignments": reassign,
-            "Handle_Time_hrs": handle,               # kept for aliasing
-            "Resolution_Time_hours": handle,         # model expects this — also set explicitly
+            "Handle_Time_hrs": handle,               # present for models that use this
+            "Resolution_Time_hours": handle,         # present for models that use this
             "No_of_Related_Interactions": rel_int,
             "No_of_Related_Incidents": rel_inc,
             "No_of_Related_Changes": rel_chg,
@@ -124,16 +120,16 @@ with st.form("single"):
 
         try:
             row = harmonize(row)
-# hard safety: guarantee both time cols exist
-if "Handle_Time_hrs" not in row.columns:
-    row["Handle_Time_hrs"] = row["Resolution_Time_hours"] if "Resolution_Time_hours" in row.columns else 0.0
-if "Resolution_Time_hours" not in row.columns:
-    row["Resolution_Time_hours"] = row["Handle_Time_hrs"] if "Handle_Time_hrs" in row.columns else 0.0
 
-pred = priority_model.predict(row)[0]
+            # hard safety (in case EXPECTED wants both)
+            if "Handle_Time_hrs" not in row.columns and "Resolution_Time_hours" in row.columns:
+                row["Handle_Time_hrs"] = row["Resolution_Time_hours"]
+            if "Resolution_Time_hours" not in row.columns and "Handle_Time_hrs" in row.columns:
+                row["Resolution_Time_hours"] = row["Handle_Time_hrs"]
 
+            pred = priority_model.predict(row)[0]
 
-            # ---- UPGRADE #1: Pretty result badge (+ optional confidence) ----
+            # ---- Pretty result badge (+ optional confidence) ----
             conf = None
             try:
                 proba = priority_model.predict_proba(row)
@@ -177,23 +173,23 @@ if file is not None:
     try:
         dfu = pd.read_csv(file)
         st.write("Preview:", dfu.head())
+
         dfu = harmonize(dfu)
-if "Handle_Time_hrs" not in dfu.columns:
-    dfu["Handle_Time_hrs"] = dfu["Resolution_Time_hours"] if "Resolution_Time_hours" in dfu.columns else 0.0
-if "Resolution_Time_hours" not in dfu.columns:
-    dfu["Resolution_Time_hours"] = dfu["Handle_Time_hrs"] if "Handle_Time_hrs" in dfu.columns else 0.0
 
-preds = priority_model.predict(dfu)
+        # hard safety mirroring (if model expects both)
+        if "Handle_Time_hrs" not in dfu.columns and "Resolution_Time_hours" in dfu.columns:
+            dfu["Handle_Time_hrs"] = dfu["Resolution_Time_hours"]
+        if "Resolution_Time_hours" not in dfu.columns and "Handle_Time_hrs" in dfu.columns:
+            dfu["Resolution_Time_hours"] = dfu["Handle_Time_hrs"]
 
+        preds = priority_model.predict(dfu)
 
-        
         out = dfu.copy()
         out["Predicted_Priority"] = preds
 
         st.write("Results (first 10):")
         st.dataframe(out.head(10), use_container_width=True)
 
-        # ---- UPGRADE #2: Clean download button (bytes, no temp file needed) ----
         csv_bytes = out.to_csv(index=False).encode("utf-8")
         st.download_button("⬇️ Download Predictions (CSV)", data=csv_bytes, file_name="itsm_predictions.csv", mime="text/csv")
     except Exception as e:
