@@ -43,6 +43,8 @@ The app provides both **single record predictions** and **batch CSV scoring**, w
 | ![Input](https://github.com/Navjotkaur-22/ITSM-Priority-Classifier/blob/main/screenshots/form_ui.png) | ![Batch](https://github.com/Navjotkaur-22/ITSM-Priority-Classifier/blob/main/screenshots/batch_upload.png) | ![Output](https://github.com/Navjotkaur-22/ITSM-Priority-Classifier/blob/main/screenshots/output_table.png) |
 
 ---
+## 📊 Power BI Dashboard
+A Power BI dashboard snapshot is included in the repository to provide a quick visual overview of ITSM ticket trends, priorities, SLA performance, and resolution patterns for business reporting.
 
 ## 🚀 Quick Start (Local Setup)
 
